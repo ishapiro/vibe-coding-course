@@ -4,9 +4,9 @@ compatibility_date = "2026-03-09"
 compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
-binding = "DB"
-database_id = "PLACEHOLDER_DB_ID"
-database_name = "PLACEHOLDER_DB_NAME"
+binding = "demo_test_db"
+database_name = "demo-test-db"
+database_id = "6217f83d-2684-4a15-ae1f-9561c92fcabb"
 
 [assets]
 binding = "ASSETS"
