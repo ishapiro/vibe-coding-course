@@ -1,0 +1,13 @@
+name = "test"
+main = ".output/server/index.mjs"
+compatibility_date = "2026-03-09"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_id = "PLACEHOLDER_DB_ID"
+database_name = "PLACEHOLDER_DB_NAME"
+
+[assets]
+binding = "ASSETS"
+directory = ".output/public"
