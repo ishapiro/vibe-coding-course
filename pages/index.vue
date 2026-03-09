@@ -80,6 +80,8 @@
 </template>
 
 <script setup lang="ts">
+const { setAuthenticated } = useAuth()
+
 const adminPassword = ref("")
 const adminLoading = ref(false)
 const adminMessage = ref("")
@@ -147,9 +149,12 @@ async function checkPassword (role: 'admin' | 'station') {
 
     if (data && typeof data.ok === 'boolean') {
       successRef.value = data.ok
-      messageRef.value = data.ok
-        ? 'Password is correct.'
-        : 'Password is incorrect.'
+      if (data.ok) {
+        setAuthenticated(role, passwordRef.value)
+        messageRef.value = 'Password is correct. Session updated.'
+      } else {
+        messageRef.value = 'Password is incorrect.'
+      }
     } else {
       messageRef.value = 'Unexpected response from server.'
       successRef.value = false
