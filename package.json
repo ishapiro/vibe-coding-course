@@ -9,6 +9,8 @@
     "migrate:local": "bash ./scripts/migrate-local.sh",
     "migrate:remote": "bash ./scripts/migrate-remote.sh",
     "clean": "bash ./scripts/clean-local-orders.sh",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
@@ -21,9 +23,12 @@
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.12.1",
+    "@vitest/ui": "^2.1.9",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^16.4.7",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.15",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^2.0.5"
   }
 }
