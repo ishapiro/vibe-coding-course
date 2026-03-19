@@ -51,6 +51,16 @@ type ProductRow = {
   ordering: number
 }
 
+type CustomizationOptionRow = {
+  id: number
+  product_class_id: number | null
+  product_id: number | null
+  label: string
+  kind: string
+  options: string | null
+  ordering: number
+}
+
 function mapCategoryRowToJson (row: CategoryRow) {
   return {
     id: row.id,
@@ -71,10 +81,22 @@ function mapProductRowToJson (row: ProductRow) {
   }
 }
 
+function mapCustomizationOptionRowToJson (row: CustomizationOptionRow) {
+  return {
+    id: row.id,
+    categoryId: row.product_class_id,
+    productId: row.product_id,
+    label: row.label,
+    kind: row.kind,
+    options: row.options,
+    ordering: row.ordering
+  }
+}
+
 export default defineEventHandler(async (event) => {
   const db = getDb(event)
 
-  const [categoriesResult, productsResult] = await Promise.all([
+  const [categoriesResult, productsResult, customizationResult] = await Promise.all([
     db
       .prepare(
         `
@@ -92,12 +114,35 @@ export default defineEventHandler(async (event) => {
           ORDER BY ordering ASC, id ASC
         `
       )
-      .all<ProductRow>()
+      .all<ProductRow>(),
+    db
+      .prepare(
+        `
+          SELECT
+            id,
+            product_class_id,
+            product_id,
+            label,
+            kind,
+            options,
+            ordering
+          FROM customization_options
+          ORDER BY
+            product_class_id IS NULL,
+            product_class_id,
+            product_id IS NULL,
+            product_id,
+            ordering ASC,
+            id ASC
+        `
+      )
+      .all<CustomizationOptionRow>()
   ])
 
   return {
     categories: (categoriesResult.results ?? []).map(mapCategoryRowToJson),
-    products: (productsResult.results ?? []).map(mapProductRowToJson)
+    products: (productsResult.results ?? []).map(mapProductRowToJson),
+    customizations: (customizationResult.results ?? []).map(mapCustomizationOptionRowToJson)
   }
 })
 
