@@ -50,6 +50,16 @@ function mapSettingRowToJson (row: SettingRow) {
 export default defineEventHandler(async (event) => {
   const db = getDb(event)
 
+  // Keep core customer-facing settings initialized.
+  await db
+    .prepare(
+      `
+        INSERT OR IGNORE INTO system_settings (key, value)
+        VALUES ('thank_you_message', 'Your order will be ready shortly')
+      `
+    )
+    .run()
+
   const { results } = await db
     .prepare(
       `

@@ -30,7 +30,7 @@
             </p>
           </div>
 
-          <section class="rounded-lg border border-gray-200 bg-white p-4">
+          <section v-if="!orderPlaced" class="rounded-lg border border-gray-200 bg-white p-4">
             <h2 class="text-lg font-semibold text-gray-900">
               1) Your details
             </h2>
@@ -73,7 +73,7 @@
             </p>
           </section>
 
-          <section class="rounded-lg border border-gray-200 bg-white p-4">
+          <section v-if="!orderPlaced" class="rounded-lg border border-gray-200 bg-white p-4">
             <h2 class="text-lg font-semibold text-gray-900">
               2) Build your order
             </h2>
@@ -182,6 +182,36 @@
               </div>
             </template>
           </section>
+
+          <section v-if="orderPlaced" class="rounded-lg border border-green-200 bg-green-50 p-5">
+            <h2 class="text-2xl font-semibold text-green-900">
+              Thank you!
+            </h2>
+            <p class="mt-2 text-green-900">
+              {{ thankYouText }}
+            </p>
+            <p v-if="placedOrderNumber" class="mt-2 text-sm font-medium text-green-800">
+              Order number: {{ placedOrderNumber }}
+            </p>
+            <div class="mt-4 flex flex-wrap gap-2">
+              <a
+                v-if="thankYouLink"
+                :href="thankYouLink"
+                class="inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {{ thankYouLinkText }}
+              </a>
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
+                @click="startNewOrder"
+              >
+                Start New Order
+              </button>
+            </div>
+          </section>
         </div>
 
         <aside class="rounded-lg border border-gray-200 bg-white p-4 lg:sticky lg:top-8 lg:h-fit">
@@ -239,10 +269,11 @@
             <button
               type="button"
               class="inline-flex flex-1 items-center justify-center rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-60"
-              :disabled="cart.length === 0"
-              @click="showPlaceOrderStub"
+              :disabled="cart.length === 0 || placingOrder || orderPlaced"
+              @click="placeOrder"
             >
-              Place Order
+              <span v-if="placingOrder">Placing…</span>
+              <span v-else>Place Order</span>
             </button>
           </div>
           <p v-if="placeOrderMessage" class="mt-2 text-xs text-gray-600">
@@ -394,6 +425,11 @@ type CartItem = {
   customizations: CartSelection[]
 }
 
+type PublicSettingsResponse = {
+  items: Array<{ key: string, value: string }>
+  byKey: Record<string, string>
+}
+
 const staffModalOpen = ref(false)
 const staffPassword = ref('')
 const authenticating = ref(false)
@@ -417,6 +453,12 @@ const selectedProductId = ref<number | null>(null)
 const selectedCustomizationMap = ref<Record<number, string[]>>({})
 const cart = ref<CartItem[]>([])
 const placeOrderMessage = ref('')
+const placingOrder = ref(false)
+const orderPlaced = ref(false)
+const placedOrderNumber = ref('')
+const thankYouText = ref('Your order will be ready shortly')
+const thankYouLink = ref('')
+const thankYouLinkText = ref('View details')
 
 const isNameValid = computed(() => customerName.value.trim().length > 0)
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -532,8 +574,93 @@ function clearCart () {
   cart.value = []
 }
 
-function showPlaceOrderStub () {
-  placeOrderMessage.value = 'Place Order is not enabled yet. Order submission is intentionally stubbed for now.'
+async function loadPublicSettings () {
+  try {
+    const response = await fetch('/api/public-settings', {
+      method: 'GET',
+      headers: { Accept: 'application/json' }
+    })
+    if (!response.ok) return
+    const data = await response.json().catch(() => ({} as PublicSettingsResponse))
+    const byKey = data?.byKey || {}
+    if (typeof byKey.thank_you_message === 'string' && byKey.thank_you_message.trim()) {
+      thankYouText.value = byKey.thank_you_message
+    }
+    if (typeof byKey.thank_you_link === 'string' && byKey.thank_you_link.trim()) {
+      thankYouLink.value = byKey.thank_you_link.trim()
+    }
+    if (typeof byKey.thank_you_link_text === 'string' && byKey.thank_you_link_text.trim()) {
+      thankYouLinkText.value = byKey.thank_you_link_text.trim()
+    }
+  } catch {
+    // keep defaults
+  }
+}
+
+async function placeOrder () {
+  customerNameTouched.value = true
+  customerEmailTouched.value = true
+  placeOrderMessage.value = ''
+
+  if (!canStartOrdering.value) {
+    placeOrderMessage.value = 'Please enter a valid name and email before placing your order.'
+    return
+  }
+
+  if (cart.value.length === 0) {
+    placeOrderMessage.value = 'Your cart is empty.'
+    return
+  }
+
+  placingOrder.value = true
+  try {
+    const response = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerName: customerName.value.trim(),
+        customerEmail: customerEmail.value.trim(),
+        items: cart.value.map(item => ({
+          productId: item.productId,
+          quantity: 1,
+          customizations: item.customizations
+        }))
+      })
+    })
+
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok || !data?.ok) {
+      placeOrderMessage.value =
+        typeof data?.error === 'string' && data.error
+          ? data.error
+          : 'Unable to place order right now.'
+      return
+    }
+
+    placedOrderNumber.value =
+      typeof data?.item?.displayOrderNumber === 'string'
+        ? data.item.displayOrderNumber
+        : ''
+
+    orderPlaced.value = true
+    cart.value = []
+    selectedCustomizationMap.value = {}
+    selectedProductId.value = null
+  } catch {
+    placeOrderMessage.value = 'Network error while placing order.'
+  } finally {
+    placingOrder.value = false
+  }
+}
+
+function startNewOrder () {
+  orderPlaced.value = false
+  placedOrderNumber.value = ''
+  cart.value = []
+  selectedCustomizationMap.value = {}
+  selectedProductId.value = null
+  selectedCategoryId.value = categories.value[0]?.id ?? null
+  placeOrderMessage.value = ''
 }
 
 async function loadMenuData () {
@@ -609,6 +736,7 @@ async function authenticateStaff () {
 onMounted(() => {
   staffUnlocked.value = !!storedStationPassword.value
   loadMenuData()
+  loadPublicSettings()
 })
 
 watch(customerName, () => {
