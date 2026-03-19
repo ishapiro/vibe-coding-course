@@ -48,6 +48,25 @@ type OrderRow = {
   preparing_employee_id: number | null
 }
 
+type LineItemRow = {
+  id: number
+  product_id: number
+  quantity: number
+  unit_price: number
+  customizations_json: string | null
+  product_name: string
+}
+
+function parseCustomizations (value: string | null) {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
 function mapOrderRowToJson (row: OrderRow) {
   return {
     id: row.id,
@@ -59,6 +78,17 @@ function mapOrderRowToJson (row: OrderRow) {
     displayOrderNumber: row.display_order_number,
     deliveredAt: row.delivered_at,
     preparingEmployeeId: row.preparing_employee_id
+  }
+}
+
+function mapLineItemRowToJson (row: LineItemRow) {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    productName: row.product_name,
+    quantity: row.quantity,
+    unitPrice: row.unit_price,
+    customizations: parseCustomizations(row.customizations_json)
   }
 }
 
@@ -108,9 +138,29 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const { results: lineItemResults } = await db
+    .prepare(
+      `
+        SELECT
+          oli.id,
+          oli.product_id,
+          oli.quantity,
+          oli.unit_price,
+          oli.customizations_json,
+          p.name AS product_name
+        FROM order_line_items oli
+        INNER JOIN products p ON p.id = oli.product_id
+        WHERE oli.order_id = ?
+        ORDER BY oli.id ASC
+      `
+    )
+    .bind(id)
+    .all<LineItemRow>()
+
   return {
     ok: true,
-    item: mapOrderRowToJson(row)
+    item: mapOrderRowToJson(row),
+    lineItems: (lineItemResults ?? []).map(mapLineItemRowToJson)
   }
 })
 

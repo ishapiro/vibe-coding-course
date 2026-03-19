@@ -93,7 +93,7 @@ export default defineEventHandler(async (event) => {
 
   const db = getDb(event)
 
-  const [ordersResult, total, newCount, preparingCount, readyCount, completedCount] = await Promise.all([
+  const [ordersResult, total, newCount, preparingCount, readyCount, completedCount, deliveredCount] = await Promise.all([
     db
       .prepare(
         `
@@ -105,7 +105,7 @@ export default defineEventHandler(async (event) => {
             created_at,
             updated_at
           FROM orders
-          WHERE status IN ('new', 'preparing', 'ready', 'completed')
+          WHERE status IN ('new', 'preparing', 'ready', 'completed', 'delivered')
           ORDER BY created_at ASC, id ASC
         `
       )
@@ -114,7 +114,8 @@ export default defineEventHandler(async (event) => {
     getCountByStatus(db, 'new'),
     getCountByStatus(db, 'preparing'),
     getCountByStatus(db, 'ready'),
-    getCountByStatus(db, 'completed')
+    getCountByStatus(db, 'completed'),
+    getCountByStatus(db, 'delivered')
   ])
 
   const orders = (ordersResult.results ?? []).map(mapOrderRowToJson)
@@ -125,13 +126,13 @@ export default defineEventHandler(async (event) => {
       new: newCount,
       preparing: preparingCount,
       ready: readyCount,
-      completed: completedCount
+      completed: completedCount + deliveredCount
     },
     groups: {
       new: orders.filter(order => order.status === 'new'),
       preparing: orders.filter(order => order.status === 'preparing'),
       ready: orders.filter(order => order.status === 'ready'),
-      completed: orders.filter(order => order.status === 'completed')
+      completed: orders.filter(order => order.status === 'completed' || order.status === 'delivered')
     }
   }
 })
