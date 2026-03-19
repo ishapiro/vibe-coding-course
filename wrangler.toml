@@ -11,3 +11,7 @@ database_id = "6217f83d-2684-4a15-ae1f-9561c92fcabb"
 [assets]
 binding = "ASSETS"
 directory = ".output/public"
+
+[[routes]]
+pattern = "vibe-test.cogitations.com"
+custom_domain = true
