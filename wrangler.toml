@@ -3,15 +3,20 @@ main = ".output/server/index.mjs"
 compatibility_date = "2026-03-09"
 compatibility_flags = ["nodejs_compat"]
 
+# Create the database manually with npx wrangler d1 create demo-test-db
+# Paste the appropriate database_id into this section of the toml file
 [[d1_databases]]
 binding = "demo_test_db"
 database_name = "demo-test-db"
-database_id = "6217f83d-2684-4a15-ae1f-9561c92fcabb"
+# database_id = "6217f83d-2684-4a15-ae1f-9561c92fcabb" # ishapiro@cogitations.com
+database_id = "32993e03-a218-4450-8ff8-a1c3fce9b626" # irvshapiro@gmail.com
 
 [assets]
 binding = "ASSETS"
 directory = ".output/public"
 
-[[routes]]
-pattern = "vibe-test.cogitations.com"
-custom_domain = true
+# Use on cogitations only
+# Example of users a sub-domain on a domain you own
+# [[routes]]
+# pattern = "vibe-test.cogitations.com"
+# custom_domain = true
