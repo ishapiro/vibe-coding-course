@@ -8,7 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "demo_test_db"
 database_name = "demo-test-db"
-# database_id = "6217f83d-2684-4a15-ae1f-9561c92fcabb"
+# database_id = "6217f83d-2684-4a15-ae1f-9561c92fcabb" # IMS
 database_id = "32993e03-a218-4450-8ff8-a1c3fce9b626"
 
 [assets]
@@ -17,5 +17,5 @@ directory = ".output/public"
 
 # Custom domain on a zone you control (example):
 # [[routes]]
-# pattern = "vibe-test.example.com"
+# pattern = "vibe-test.cogitations.com"
 # custom_domain = true
